@@ -59,6 +59,9 @@ type QueueOptions struct {
 	// Optional message handler. The default is the global Tasks registry.
 	Handler Handler
 
+	// Skip system requirements check
+	SkipSysReqCheck bool
+
 	inited bool
 }
 
