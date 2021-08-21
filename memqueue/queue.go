@@ -24,9 +24,7 @@ func (q *scheduler) Schedule(msg *taskq.Message, fn func()) {
 
 	timer := time.AfterFunc(msg.Delay, func() {
 		// Remove our entry from the map
-		q.timerLock.Lock()
-		delete(q.timerMap, msg)
-		q.timerLock.Unlock()
+		q.Remove(msg)
 
 		fn()
 	})
@@ -43,7 +41,7 @@ func (q *scheduler) Remove(msg *taskq.Message) {
 
 	timer, ok := q.timerMap[msg]
 	if ok {
-		timer.Stop()
+		cleanupTimer(timer)
 		delete(q.timerMap, msg)
 	}
 }
@@ -54,13 +52,22 @@ func (q *scheduler) Purge() int {
 
 	// Stop all delayed items
 	for _, timer := range q.timerMap {
-		timer.Stop()
+		cleanupTimer(timer)
 	}
 
 	n := len(q.timerMap)
 	q.timerMap = nil
 
 	return n
+}
+
+func cleanupTimer(timer *time.Timer) {
+	if !timer.Stop() {
+		select {
+		case <-timer.C:
+		default:
+		}
+	}
 }
 
 //------------------------------------------------------------------------------
